@@ -1,0 +1,272 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.IO;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Xml;
+
+namespace Personal_Details
+{
+    public partial class PersonalDetailsForm : System.Web.UI.Page
+    {
+        PersonalDetailsClass aPersonal = new PersonalDetailsClass();
+        string filePathForXML, xmlString = "", xml;
+        protected void Page_Load(object sender, EventArgs e)
+        {
+            filePathForXML = Server.MapPath("~/Data/PersonalInfo.xml");
+        }
+
+        protected void btnSubmit_Click(object sender, EventArgs e)
+        {
+            //---------Personal Details---------
+            aPersonal.strFirstName = txtFirstName.Text;
+            aPersonal.strLastName = txtLastName.Text;
+            aPersonal.strFatherName = txtFatherName.Text;
+            aPersonal.strMatherName = txtMatherName.Text;
+            aPersonal.dteDateOfBirth = Convert.ToDateTime( dteDOB.Text);
+            aPersonal.strGender = rdbGender.SelectedItem.Value.ToString();
+            aPersonal.strReligion = txtReligion.Text;
+            aPersonal.strMeritalStutas = rdbMaritalStatus.SelectedItem.Value.ToString();
+            aPersonal.strNational = txtNationality.Text;
+            aPersonal.strNID = txtNID.Text;
+            aPersonal.strPassportNo = txtPassportNo.Text;
+            aPersonal.dtePassportIssueDate = Convert.ToDateTime(dtePassportIssuDate.Text);
+            aPersonal.strMobile1 = txtMobile1.Text;
+            aPersonal.strMobile2 = txtMobile2.Text;
+            aPersonal.strMobile3 = txtMobile3.Text;
+            aPersonal.strMainEmail = txtMainEmail.Text;
+            aPersonal.strAltEmail = txtAltEmail.Text;
+
+            //---------Address Details---------
+            aPersonal.strPresentAddress = txtPresentAddress.Text;
+            aPersonal.strParmanentAddress = txtParmanentAddress.Text;
+
+            //---------Career and Application Information---------
+            aPersonal.strObjective = txtObjective.Text;
+            aPersonal.strParmanentAddress2 = txtParmanentAddress2.Text;
+            aPersonal.floatPresentSalary =float.Parse(txtPresentSalary.Text);
+            aPersonal.floatExpectedSalary = float.Parse(txtExpectedSalary.Text);
+            aPersonal.strJobLavel = txtJobLevel.Text;
+            aPersonal.strJobNature = txtJobNature.Text;
+
+
+
+            //---------Preferred Areas---------
+
+
+            //---------Other Relevant Information ---------
+            aPersonal.strCareerSummary = txtCareerSummary.Text;
+            aPersonal.strSpecialQualification = txtSpecialQualification.Text;
+            aPersonal.strKeywords = txtKeywords.Text;
+            aPersonal.imgPhoto = imageByte(imageUpload.PostedFile);
+              
+            CreateAddXml(aPersonal);
+
+
+
+        }
+
+        protected void btnEdit_Click(object sender, EventArgs e)
+        {
+            txtFirstName.ReadOnly = false;
+            txtLastName.ReadOnly = false;
+            txtFatherName.ReadOnly = false;
+            txtMatherName.ReadOnly = false;
+            dteDOB.ReadOnly = false;
+            txtReligion.ReadOnly = false;
+            txtNationality.ReadOnly = false;
+            txtNID.ReadOnly = false;
+            txtPassportNo.ReadOnly = false;
+            dtePassportIssuDate.ReadOnly = false;
+            txtMobile1.ReadOnly = false;
+            txtMobile2.ReadOnly = false;
+            txtMobile3.ReadOnly = false;
+            txtMainEmail.ReadOnly = false;
+            txtAltEmail.ReadOnly = false;
+            txtPresentAddress.ReadOnly = false;
+            txtParmanentAddress.ReadOnly = false;
+            txtObjective.ReadOnly = false;
+            txtParmanentAddress2.ReadOnly = false;
+            txtPresentSalary.ReadOnly = false;
+            txtExpectedSalary.ReadOnly = false;
+            txtJobLevel.ReadOnly = false;
+            txtJobNature.ReadOnly = false;
+            txtCareerSummary.ReadOnly = false;
+            txtSpecialQualification.ReadOnly = false;
+            txtKeywords.ReadOnly = false;
+
+            btnSubmit.Visible = true;
+            btnEdit.Visible = false;
+        }
+        private byte[] imageByte(HttpPostedFile postedFile)
+        {
+           
+            string fileName = Path.GetFileName(postedFile.FileName);
+            string fileExtension = Path.GetExtension(fileName);
+            int fileSize = postedFile.ContentLength;
+            if (fileExtension.ToLower() == ".jpg" || fileExtension.ToLower() == ".png" || fileExtension.ToLower() == ".gif" || fileExtension.ToLower() == ".bmp")
+            {
+                Stream stream = postedFile.InputStream;
+                BinaryReader binaryReader = new BinaryReader(stream);
+                byte[] bytes = binaryReader.ReadBytes((int)stream.Length);
+            }
+
+            return (bytes);
+        }
+       
+
+        private void CreateAddXml(PersonalDetailsClass aPersonal)
+        {
+            XmlDocument doc = new XmlDocument();
+            if (System.IO.File.Exists(filePathForXML))
+            {
+                doc.Load(filePathForXML);
+                XmlNode rootNode = doc.SelectSingleNode("People");
+                XmlNode addItem = CreateItemNodeDocUpload(doc,aPersonal);
+                rootNode.AppendChild(addItem);
+            }
+            else
+            {
+                XmlNode xmldeclerationNode = doc.CreateXmlDeclaration("1.0", "UTF-8", "");
+                doc.AppendChild(xmldeclerationNode);
+                XmlNode rootNode = doc.CreateElement("People");
+                XmlNode addItem = CreateItemNodeDocUpload(doc,aPersonal);
+                rootNode.AppendChild(addItem);
+                doc.AppendChild(rootNode);
+            }
+            doc.Save(filePathForXML);
+            LoadGridwithXml();
+        }
+
+
+
+        private void LoadGridwithXml()
+        {
+            try
+            {
+                XmlDocument doc = new XmlDocument();
+                doc.Load(filePathForXML);
+
+                XmlNode xlnd = doc.SelectSingleNode("People");
+                xmlString = xlnd.InnerXml;
+
+                xmlString = "<People>" + xmlString + "</People>";
+                StringReader sr = new StringReader(xmlString);
+
+                DataSet ds = new DataSet();
+                ds.ReadXml(sr);
+
+                if (ds.Tables[0].Rows.Count > 0)
+                    dgvPersonalDetails.DataSource = ds;
+
+                else
+                    dgvPersonalDetails.DataSource = "";
+
+                dgvPersonalDetails.DataBind();
+            }
+            catch
+            {
+                dgvPersonalDetails.DataSource = "";
+                dgvPersonalDetails.DataBind();
+            }
+        }
+
+        private XmlNode CreateItemNodeDocUpload(XmlDocument doc, PersonalDetailsClass aPersonal)
+        {
+            XmlNode node = doc.CreateElement("Person");
+
+            XmlAttribute FirstName = doc.CreateAttribute("firstName"); FirstName.Value = aPersonal.strFirstName;
+            node.Attributes.Append(FirstName);
+
+            XmlAttribute LastName = doc.CreateAttribute("lastName"); LastName.Value = aPersonal.strLastName;
+            node.Attributes.Append(LastName);
+
+            XmlAttribute FatherName = doc.CreateAttribute("fatherName"); FatherName.Value = aPersonal.strFatherName;
+            node.Attributes.Append(FatherName);
+
+            XmlAttribute MatherName = doc.CreateAttribute("matherName"); MatherName.Value = aPersonal.strMatherName;
+            node.Attributes.Append(MatherName);
+
+            XmlAttribute DateOfBirth = doc.CreateAttribute("dob"); DateOfBirth.Value = aPersonal.dteDateOfBirth.ToString();
+            node.Attributes.Append(DateOfBirth);
+
+            XmlAttribute Gender = doc.CreateAttribute("gender"); Gender.Value = aPersonal.strGender;
+            node.Attributes.Append(Gender);
+
+            XmlAttribute Religion = doc.CreateAttribute("religion"); Religion.Value = aPersonal.strReligion;
+            node.Attributes.Append(Religion);
+
+            XmlAttribute MaritalStatus = doc.CreateAttribute("maritalStatus"); MaritalStatus.Value = aPersonal.strMeritalStutas;
+            node.Attributes.Append(MaritalStatus);
+
+            XmlAttribute Nationality = doc.CreateAttribute("nationality"); Nationality.Value = aPersonal.strNational;
+            node.Attributes.Append(Nationality);
+
+            XmlAttribute NID = doc.CreateAttribute("nid"); NID.Value = aPersonal.strNID;
+            node.Attributes.Append(NID);
+
+            XmlAttribute PassportNo = doc.CreateAttribute("passportNo"); PassportNo.Value = aPersonal.strPassportNo;
+            node.Attributes.Append(PassportNo);
+
+            XmlAttribute PassportIssueDate = doc.CreateAttribute("passportIssueDate"); PassportIssueDate.Value = aPersonal.dtePassportIssueDate.ToString();
+            node.Attributes.Append(PassportIssueDate);
+
+            XmlAttribute Mobile1 = doc.CreateAttribute("mobile1"); Mobile1.Value = aPersonal.strMobile1;
+            node.Attributes.Append(Mobile1);
+
+            XmlAttribute Mobile2 = doc.CreateAttribute("mobile2"); Mobile2.Value = aPersonal.strMobile2;
+            node.Attributes.Append(Mobile2);
+
+            XmlAttribute Mobile3 = doc.CreateAttribute("mobile3"); Mobile3.Value = aPersonal.strMobile3;
+            node.Attributes.Append(Mobile3);
+
+            XmlAttribute MainEmail = doc.CreateAttribute("mainEmail"); MainEmail.Value = aPersonal.strMainEmail;
+            node.Attributes.Append(MainEmail);
+
+            XmlAttribute AltEmail = doc.CreateAttribute("altEmail"); AltEmail.Value = aPersonal.strAltEmail;
+            node.Attributes.Append(AltEmail);
+
+            XmlAttribute PresentAddress = doc.CreateAttribute("presentAddress"); PresentAddress.Value = aPersonal.strPresentAddress;
+            node.Attributes.Append(PresentAddress);
+
+            XmlAttribute ParmanentAddress = doc.CreateAttribute("parmanentAddress"); ParmanentAddress.Value = aPersonal.strParmanentAddress;
+            node.Attributes.Append(ParmanentAddress);
+
+            XmlAttribute Objective = doc.CreateAttribute("objective"); Objective.Value = aPersonal.strObjective;
+            node.Attributes.Append(Objective);
+
+            XmlAttribute ParmanentAddress2 = doc.CreateAttribute("parmanenetAddress"); ParmanentAddress2.Value = aPersonal.strParmanentAddress2;
+            node.Attributes.Append(ParmanentAddress2);
+
+            XmlAttribute PresentSalary = doc.CreateAttribute("presentSalary"); PresentSalary.Value = aPersonal.floatPresentSalary.ToString();
+            node.Attributes.Append(PresentSalary);
+
+            XmlAttribute ExpectedSalary = doc.CreateAttribute("expectedSalary"); ExpectedSalary.Value = aPersonal.floatExpectedSalary.ToString();
+            node.Attributes.Append(ExpectedSalary);
+
+            XmlAttribute JobLevel = doc.CreateAttribute("joblevel"); JobLevel.Value = aPersonal.strJobLavel;
+            node.Attributes.Append(JobLevel);
+
+            XmlAttribute JobNature = doc.CreateAttribute("jobnature"); JobNature.Value = aPersonal.strJobNature;
+            node.Attributes.Append(JobNature);
+
+            XmlAttribute CareerSummary = doc.CreateAttribute("careersummary"); CareerSummary.Value = aPersonal.strCareerSummary;
+            node.Attributes.Append(CareerSummary);
+
+            XmlAttribute SpecialQualification = doc.CreateAttribute("specialqualification"); SpecialQualification.Value = aPersonal.strSpecialQualification;
+            node.Attributes.Append(SpecialQualification);
+
+            XmlAttribute Keywords = doc.CreateAttribute("keywords"); Keywords.Value = aPersonal.strKeywords;
+            node.Attributes.Append(Keywords);
+
+            XmlAttribute Phote = doc.CreateAttribute("image"); Phote.Value =Convert.ToBase64String( aPersonal.imgPhoto);
+            node.Attributes.Append(Phote);
+
+            return node;
+
+        }
+    }
+}
